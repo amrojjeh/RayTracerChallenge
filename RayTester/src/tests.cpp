@@ -108,3 +108,17 @@ TEST(Tuples, normalizing) {
 TEST(Tuples, dotProduct) {
 	ASSERT_FLOAT_EQ(vector(1, 2, 3).dot(vector(2, 3, 4)), 20.f);
 }
+
+TEST(Tuples, crossProduct) {
+	Tuple v1{ vector(1, 2, 3) };
+	Tuple v2{ vector(2, 3, 4) };
+
+	Tuple result1{ v1.cross(v2) };
+	Tuple result2{ v2.cross(v1) };
+
+	Tuple expected1{ vector(-1, 2, -1) };
+	Tuple expected2{ vector(1, -2, 1) };
+
+	ASSERT_TRUE(result1 == expected1);
+	ASSERT_TRUE(result2 == expected2);
+}

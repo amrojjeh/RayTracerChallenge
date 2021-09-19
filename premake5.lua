@@ -14,14 +14,14 @@ project "RayTracer"
 		"%{prj.name}/**.cpp"
 	}
 
+	targetdir (target_output)
+	objdir (object_output)
+
 	filter {"configurations:Debug"}
 		symbols "On"
 	
 	filter {"configurations:Release"}
 		optimize "On"
-
-	targetdir (target_output)
-	objdir (object_output)
 
 project "RayTester"
 	location "RayTester"
