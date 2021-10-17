@@ -334,3 +334,285 @@ TEST(Matrix, Inequality) {
 	ASSERT_FALSE(a == b);
 	ASSERT_TRUE(a != b);
 }
+
+TEST(Matrix, Matrix_Multipication) {
+	Matrix<4> a{ {
+		{1.f, 2.f, 3.f, 4.f},
+		{5.f, 6.f, 7.f, 8.f},
+		{9.f, 8.f, 7.f, 6.f},
+		{5.f, 4.f, 3.f, 2.f},
+	} };
+
+	Matrix<4> b{ {
+		{-2.f, 1.f, 2.f, 3.f},
+		{3.f, 2.f, 1.f, -1.f},
+		{4.f, 3.f, 6.f, 5.f},
+		{1.f, 2.f, 7.f, 8.f},
+	} };
+
+	Matrix<4> expected{ {
+		{20.f, 22.f, 50.f, 48.f},
+		{44.f, 54.f, 114.f, 108.f},
+		{40.f, 58.f, 110.f, 102.f},
+		{16.f, 26.f, 46.f, 42.f},
+	} };
+
+	Matrix<4> result = a * b;
+
+	ASSERT_EQ(result, expected);
+}
+
+TEST(Matrix, Tuple_Multipication) {
+	Matrix<4> a{ {
+		{1.f, 2.f, 3.f, 4.f},
+		{2.f, 4.f, 4.f, 2.f},
+		{8.f, 6.f, 4.f, 1.f},
+		{0.f, 0.f, 0.f, 1.f},
+	} };
+
+	Tuple b{1, 2, 3, 1};
+	Tuple expected{18, 24, 33, 1};
+	ASSERT_EQ(expected, a * b);
+}
+
+TEST(Matrix, Identity) {
+	Matrix<4> a{ {
+		{0.f, 1.f, 2.f, 4.f},
+		{1.f, 2.f, 4.f, 8.f},
+		{2.f, 4.f, 8.f, 16.f},
+		{4.f, 8.f, 16.f, 32.f},
+	} };
+
+	Matrix<4> result = a * Matrix<4>::identity;
+
+	ASSERT_EQ(result, a);
+}
+
+TEST(Matrix, Transposing) {
+	Matrix<4> a{ {
+		{0.f, 9.f, 3.f, 0.f},
+		{9.f, 8.f, 0.f, 8.f},
+		{1.f, 8.f, 5.f, 3.f},
+		{0.f, 0.f, 5.f, 8.f},
+	} };
+
+	Matrix<4> expected{ {
+		{0.f, 9.f, 1.f, 0.f},
+		{9.f, 8.f, 8.f, 0.f},
+		{3.f, 0.f, 5.f, 5.f},
+		{0.f, 8.f, 3.f, 8.f},
+	} };
+
+	Matrix<4> result = a.transpose();
+
+	ASSERT_TRUE(result == expected);
+}
+
+TEST(Matrix, 2x2Determinant) {
+	Matrix<2> m{ {
+		{1.f, 5.f},
+		{-3.f, 2.f},
+	} };
+	float result = m.determinant();
+	float expected = 17.f;
+	ASSERT_FLOAT_EQ(expected, result);
+}
+
+TEST(Matrix, SubMatrix) {
+	Matrix<3> a{ {
+		{1.f, 5.f, 0.f},
+		{-3.f, 2.f, 7.f},
+		{0.f, 6.f, -3.f},
+	} };
+
+	Matrix<2> actuala = a.submatrix(0, 2);
+
+	Matrix<2> expecteda{ {
+		{-3.f, 2.f},
+		{0.f, 6.f}
+	} };
+
+	ASSERT_EQ(actuala, expecteda);
+
+	Matrix<4> b{ {
+		{-6.f, 1.f, 1.f, 6.f},
+		{-8.f, 5.f, 8.f, 6.f},
+		{-1.f, 0.f, 8.f, 2.f},
+		{-7.f, 1.f, -1.f, 1.f},
+	} };
+
+	Matrix<3> resultb = b.submatrix(2, 1);
+
+	Matrix<3> expectedb{ {
+		{-6.f, 1.f, 6.f},
+		{-8.f, 8.f, 6.f},
+		{-7.f, -1.f, 1.f},
+	} };
+
+	ASSERT_EQ(resultb, expectedb);
+}
+
+TEST(Matrix, 3x3Minor) {
+	Matrix<3> a{ {
+		{3.f, 5.f, 0.f},
+		{2.f, -1.f, -7.f},
+		{6.f, -1.f, 5.f},
+	} };
+
+	ASSERT_FLOAT_EQ(25.f, a.minor(1, 0));
+}
+
+TEST(Matrix, cofactor) {
+	Matrix<3> a{ {
+		{3.f, 5.f, 0.f},
+		{2.f, -1.f, -7.f},
+		{6.f, -1.f, 5.f},
+	} };
+	ASSERT_FLOAT_EQ(-12.f, a.minor(0, 0));
+	ASSERT_FLOAT_EQ(-12.f, a.cofactor(0, 0));
+	ASSERT_FLOAT_EQ(25.f, a.minor(1, 0));
+	ASSERT_FLOAT_EQ(-25.f, a.cofactor(1, 0));
+}
+
+TEST(Matrix, 3x3Determinant) {
+	Matrix<3> a{ {
+		{1.f, 2.f, 6.f},
+		{-5.f, 8.f, -4.f},
+		{2.f, 6.f, 4.f},
+	} };
+	ASSERT_FLOAT_EQ(56.f, a.cofactor(0, 0));
+	ASSERT_FLOAT_EQ(12.f, a.cofactor(0, 1));
+	ASSERT_FLOAT_EQ(-46.f, a.cofactor(0, 2));
+	ASSERT_FLOAT_EQ(-196.f, a.determinant());
+}
+
+TEST(Matrix, 4x4Determinant) {
+	Matrix<4> a{ {
+		{-2.f, -8.f, 3.f, 5.f},
+		{-3.f, 1.f, 7.f, 3.f},
+		{1.f, 2.f, -9.f, 6.f},
+		{-6.f, 7.f, 7.f, -9.f},
+	} };
+
+	ASSERT_FLOAT_EQ(690.f, a.cofactor(0, 0));
+	ASSERT_FLOAT_EQ(447.f, a.cofactor(0, 1));
+	ASSERT_FLOAT_EQ(210.f, a.cofactor(0, 2));
+	ASSERT_FLOAT_EQ(51.f, a.cofactor(0, 3));
+	ASSERT_FLOAT_EQ(-4071.f, a.determinant());
+}
+
+TEST(Matrix, IsInvertible) {
+	Matrix<4> a{ {
+		{6.f, 4.f, 4.f, 4.f},
+		{5.f, 5.f, 7.f, 6.f},
+		{4.f, -9.f, 3.f, -7.f},
+		{9.f, 1.f, 7.f, -6.f},
+	} };
+	ASSERT_FLOAT_EQ(a.determinant(), -2120.f);
+	ASSERT_TRUE(a.invertible());
+
+	Matrix<4> b{ {
+		{-4.f, 2.f, -2.f, -3.f},
+		{9.f, 6.f, 2.f, 6.f},
+		{0.f, -5.f, 1.f, -5.f},
+		{0.f, 0.f, 0.f, 0.f},
+	} };
+	ASSERT_FLOAT_EQ(b.determinant(), 0.f);
+	ASSERT_FALSE(b.invertible());
+}
+
+TEST(Matrix, Inverse) {
+	Matrix<4> a{ {
+		{-5.f, 2.f, 6.f, -8.f},
+		{1.f, -5.f, 1.f, 8.f},
+		{7.f, 7.f, -6.f, -7.f},
+		{1.f, -3.f, 7.f, 4.f},
+	} };
+
+	Matrix<4> b{ a.inverse() };
+
+	ASSERT_FLOAT_EQ(532.f, a.determinant());
+	ASSERT_FLOAT_EQ(-160.f, a.cofactor(2, 3));
+	ASSERT_FLOAT_EQ(-160.f/532.f, b[3][2]);
+	ASSERT_FLOAT_EQ(105.f, a.cofactor(3, 2));
+	ASSERT_FLOAT_EQ(105.f/532.f, b[2][3]);
+	Matrix<4> expected{ {
+		{0.21805f, 0.45113f, 0.24060f, -0.04511f},
+		{-0.80827f, -1.45677f, -0.44361f, 0.52068f},
+		{-0.07895f, -0.22368f, -0.05263f, 0.19737f},
+		{-0.52256f, -0.81391f, -0.30075f, 0.30639f}
+	} };
+
+	for (std::size_t x = 0; x < 4; ++x) {
+		for (std::size_t y = 0; y < 4; ++y) {
+			ASSERT_TRUE(std::abs(expected[x][y] - b[x][y]) <= 0.00001f);
+		}
+	}
+}
+
+TEST(Matrix, Inverse2) {
+	Matrix<4> a{ {
+		{8.f, -5.f, 9.f, 2.f},
+		{7.f, 5.f, 6.f, 1.f},
+		{-6.f, 0.f, 9.f, 6.f},
+		{-3.f, 0.f, -9.f, -4.f}
+	} };
+
+
+	Matrix<4> result = a.inverse();
+	Matrix<4> expected{ {
+		{-0.153846f, -0.15384f, -0.28205f, -0.53846f},
+		{-0.07692f,	0.12307f, 0.02564f,	0.03076f},
+		{0.35897f, 0.35897f, 0.43589f, 0.92307f},
+		{-0.69230f, -0.69230f, -0.76923f, -1.92307f}
+	} };
+
+	for (std::size_t x = 0; x < 4; ++x) {
+		for (std::size_t y = 0; y < 4; ++y) {
+			ASSERT_TRUE(std::abs(expected[x][y] - result[x][y]) <= 0.00001f);
+		}
+	}
+}
+
+TEST(Matrix, Inverse3) {
+	Matrix<4> a{ {
+		{9.f, 3.f, 0.f, 9.f},
+		{-5.f, -2.f, -6.f, -3.f},
+		{-4.f, 9.f, 6.f, 4.f},
+		{-7.f, 6.f, 6.f, 2.f}
+	} };
+
+	Matrix<4> result = a.inverse();
+	Matrix<4> expected{ {
+		{-0.04074, -0.07777, 0.14444, -0.22222},
+		{-0.07777, 0.03333, 0.36666, -0.33333},
+		{-0.02901, -0.14629, -0.10925, 0.12962},
+		{0.17777, 0.06666, -0.26666, 0.33333}
+	} };
+
+	for (std::size_t x = 0; x < 4; ++x) {
+		for (std::size_t y = 0; y < 4; ++y) {
+			ASSERT_TRUE(std::abs(expected[x][y] - result[x][y]) <= 0.00001f);
+		}
+	}
+}
+
+TEST(Matrix, Inverse4) {
+	Matrix<4> a{ {
+		{3.f, -9.f, 7.f, 3.f},
+		{3.f, -8.f, 2.f, -9.f},
+		{-4.f, 4.f, 4.f, 1.f},
+		{-6.f, 5.f, -1.f, 1.f}
+	} };
+
+	Matrix<4> b{ {
+		{8.f, 2.f, 2.f, 2.f},
+		{3.f, -1.f, 7.f, 0.f},
+		{7.f, 0.f, 5.f, 4.f},
+		{6.f, -2.f, 0.f, 5.f}
+	} };
+
+	Matrix<4> c = a * b;
+	Matrix<4> result = c * b.inverse();
+	ASSERT_EQ(result, a);
+}

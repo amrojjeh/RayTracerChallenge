@@ -5,6 +5,9 @@
 #include <array>
 #include <cstddef>
 #include<string>
+#include <cassert>
+
+#define EPSILON 0.00001
 
 struct OutOfBounds {
 	std::size_t x, y;
@@ -12,17 +15,6 @@ struct OutOfBounds {
 
 struct RGB {
 	float &red, &green, &blue;
-};
-
-template<std::size_t N>
-struct Matrix {
-	float elements[N][N];
-
-	Matrix(const float (&list)[N][N]);
-
-	float* operator[](std::size_t row);
-	bool operator==(Matrix<N> other) const;
-	bool operator!=(Matrix<N> other) const;
 };
 
 typedef struct Tuple {
@@ -50,6 +42,30 @@ typedef struct Tuple {
 	Tuple schur(const Tuple& other) const;
 	RGB getRGB();
 } Point, Vector, Color;
+
+template<std::size_t N>
+struct Matrix {
+	static const Matrix<4> identity;
+	float elements[N][N];
+
+	Matrix();
+	Matrix(const float(&list)[N][N]);
+	Matrix(const Matrix<N> &m);
+
+	float* operator[](std::size_t row);
+	const float* operator[](std::size_t row) const;
+	bool operator==(const Matrix<N> other) const;
+	bool operator!=(Matrix<N> other) const;
+	Matrix<N> operator*(Matrix<N> other) const;
+	Tuple operator*(const Tuple& other) const;
+	Matrix<N> transpose() const;
+	float determinant() const;
+	Matrix<N - 1> submatrix(std::size_t row, std::size_t col) const;
+	float minor(std::size_t row, std::size_t col) const;
+	float cofactor(std::size_t row, std::size_t col) const;
+	bool invertible() const;
+	Matrix<N> inverse() const;
+};
 
 struct Canvas {
 	const std::size_t width;
@@ -89,11 +105,36 @@ T clamp(T v, T a, T b) {
 }
 
 template<std::size_t N>
+const Matrix<4> Matrix<N>::identity = { {
+	{1.f, 0.f, 0.f, 0.f},
+	{0.f, 1.f, 0.f, 0.f},
+	{0.f, 0.f, 1.f, 0.f},
+	{0.f, 0.f, 0.f, 1.f}
+} };
+
+template<std::size_t N>
 Matrix<N>::Matrix(const float(&list)[N][N])
 {
+	static_assert(N >= 2, "Matrix must be at least 2x2.");
 	for (int x = 0; x < N; x++) {
 		for (int y = 0; y < N; y++) {
 			elements[x][y] = list[x][y];
+		}
+	}
+}
+
+template<std::size_t N>
+Matrix<N>::Matrix()
+{
+	static_assert(N >= 2, "Matrix must be at least 2x2.");
+}
+
+template<std::size_t N>
+inline Matrix<N>::Matrix(const Matrix<N> &m)
+{
+	for (std::size_t x = 0; x < N; ++x) {
+		for (std::size_t y = 0; y < N; ++y) {
+			elements[x][y] = m[x][y];
 		}
 	}
 }
@@ -104,10 +145,16 @@ float* Matrix<N>::operator[](std::size_t row){
 }
 
 template<std::size_t N>
+const float* Matrix<N>::operator[](std::size_t row) const {
+	return elements[row];
+}
+
+template<std::size_t N>
 bool Matrix<N>::operator==(Matrix<N> other) const {
 	for (std::size_t x = 0; x < N; ++x) {
 		for (std::size_t y = 0; y < N; ++y) {
-			if (elements[x][y] != other[x][y]) return false;
+			if (std::abs(elements[x][y] - other[x][y]) > EPSILON)
+				return false;
 		}
 	}
 	return true;
@@ -116,6 +163,103 @@ bool Matrix<N>::operator==(Matrix<N> other) const {
 template<std::size_t N>
 bool Matrix<N>::operator!=(Matrix<N> other) const {
 	return !(*this == other);
+}
+
+template<std::size_t N>
+Matrix<N> Matrix<N>::operator*(Matrix<N> other) const
+{
+	Matrix<N> m;
+	for (std::size_t x = 0; x < N; ++x) {
+		for (std::size_t y = 0; y < N; ++y) {
+			float result = 0.f;
+			for (std::size_t z = 0; z < N; ++z) {
+				result += elements[x][z] * other[z][y];
+			}
+			m[x][y] = result;
+		}
+	}
+	return m;
+}
+
+template<std::size_t N>
+Tuple Matrix<N>::operator*(const Tuple& other) const {
+	static_assert(N == 4, "Multiplying tuples with different sizes is not supported.");
+	return Tuple{
+		elements[0][0] * other.x + elements[0][1] * other.y + elements[0][2] * other.z + elements[0][3] * other.w,
+		elements[1][0] * other.x + elements[1][1] * other.y + elements[1][2] * other.z + elements[1][3] * other.w,
+		elements[2][0] * other.x + elements[2][1] * other.y + elements[2][2] * other.z + elements[2][3] * other.w,
+		elements[3][0] * other.x + elements[3][1] * other.y + elements[3][2] * other.z + elements[3][3] * other.w,
+	};
+}
+
+template<std::size_t N>
+Matrix<N> Matrix<N>::transpose() const {
+	Matrix<N> result;
+	for (std::size_t x = 0; x < N; ++x) {
+		for (std::size_t y = 0; y < N; ++y) {
+			result[x][y] = elements[y][x];
+		}
+	}
+	return result;
+}
+
+template<std::size_t N>
+float Matrix<N>::determinant() const {
+	float result = 0.f;
+	for (std::size_t x = 0; x < N; ++x) {
+		result += elements[0][x] * cofactor(0, x);
+	}
+	return result;
+}
+
+float Matrix<2>::determinant() const {
+	return elements[0][0] * elements[1][1] - elements[0][1] * elements[1][0];
+}
+
+template<std::size_t N>
+Matrix<N - 1> Matrix<N>::submatrix(std::size_t row, std::size_t col) const {
+	static_assert(N > 2, "Submatrix for 2x2 or less does not exist.");
+	Matrix<N - 1> result;
+	for (std::size_t x = 0; x < N; ++x) {
+		for (std::size_t y = 0; y < N; ++y) {
+			if (x == row) continue;
+			if (y == col) continue;
+			std::size_t ix = x - ((x > row) ? 1 : 0);
+			std::size_t iy = y - ((y > col) ? 1 : 0);
+			result[ix][iy] = elements[x][y];
+		}
+	}
+	return result;
+}
+
+template<std::size_t N>
+float Matrix<N>::minor(std::size_t row, std::size_t col) const {
+	static_assert(N > 2, "Submatrix for 2x2 or less does not exist.");
+	return submatrix(row, col).determinant();
+}
+
+template<std::size_t N>
+float Matrix<N>::cofactor(std::size_t row, std::size_t col) const {
+	static_assert(N > 2, "Submatrix for 2x2 or less does not exist.");
+	return minor(row, col) * ((row + col) % 2 == 0 ? 1 : -1);
+}
+
+template<std::size_t N>
+bool Matrix<N>::invertible() const {
+	return determinant() != 0;
+}
+
+template<std::size_t N>
+Matrix<N> Matrix<N>::inverse() const {
+	float d = determinant();
+	assert(d != 0);
+	Matrix<N> result;
+	for (std::size_t x = 0; x < N; ++x) {
+		for (std::size_t y = 0; y < N; ++y) {
+			result[y][x] = cofactor(x, y) / d;
+		}
+	}
+	return result;
 }
 
 Color color(float r, float g, float b) {
@@ -131,11 +275,10 @@ Tuple vector(float x, float y, float z) {
 }
 
 bool Tuple::operator==(const Tuple& other) const {
-	using slf = std::numeric_limits<float>;
-	return std::abs(x - other.x) <= slf::epsilon() &&
-		std::abs(y - other.y) <= slf::epsilon() &&
-		std::abs(z - other.z) <= slf::epsilon() &&
-		std::abs(w - other.w) <= slf::epsilon();
+	return std::abs(x - other.x) <= EPSILON &&
+		std::abs(y - other.y) <= EPSILON &&
+		std::abs(z - other.z) <= EPSILON &&
+		std::abs(w - other.w) <= EPSILON;
 }
 
 Tuple& Tuple::operator=(const Tuple& other) {
