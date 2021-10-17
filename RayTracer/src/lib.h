@@ -6,10 +6,23 @@
 #include <cstddef>
 #include<string>
 
-using slf = std::numeric_limits<float>;
+struct OutOfBounds {
+	std::size_t x, y;
+};
 
 struct RGB {
 	float &red, &green, &blue;
+};
+
+template<std::size_t N>
+struct Matrix {
+	float elements[N][N];
+
+	Matrix(const float (&list)[N][N]);
+
+	float* operator[](std::size_t row);
+	bool operator==(Matrix<N> other) const;
+	bool operator!=(Matrix<N> other) const;
 };
 
 typedef struct Tuple {
@@ -45,9 +58,9 @@ struct Canvas {
 
 	Canvas(std::size_t width, std::size_t height);
 	
-	std::size_t index(int x, int y) const;
-	void write_pixel(int x, int y, Color c);
-	Color read_pixel(int x, int y) const;
+	std::size_t index(std::size_t x, std::size_t y) const;
+	void write_pixel(std::size_t x, std::size_t y, Color c);
+	Color read_pixel(std::size_t x, std::size_t y) const;
 
 	// For some reason, this signature does not work
 	//Tuple[] operator[](std::size_t index);
@@ -75,6 +88,36 @@ T clamp(T v, T a, T b) {
 	return v;
 }
 
+template<std::size_t N>
+Matrix<N>::Matrix(const float(&list)[N][N])
+{
+	for (int x = 0; x < N; x++) {
+		for (int y = 0; y < N; y++) {
+			elements[x][y] = list[x][y];
+		}
+	}
+}
+
+template<std::size_t N>
+float* Matrix<N>::operator[](std::size_t row){
+	return elements[row];
+}
+
+template<std::size_t N>
+bool Matrix<N>::operator==(Matrix<N> other) const {
+	for (std::size_t x = 0; x < N; ++x) {
+		for (std::size_t y = 0; y < N; ++y) {
+			if (elements[x][y] != other[x][y]) return false;
+		}
+	}
+	return true;
+}
+
+template<std::size_t N>
+bool Matrix<N>::operator!=(Matrix<N> other) const {
+	return !(*this == other);
+}
+
 Color color(float r, float g, float b) {
 	return Color{ r, g, b };
 }
@@ -88,6 +131,7 @@ Tuple vector(float x, float y, float z) {
 }
 
 bool Tuple::operator==(const Tuple& other) const {
+	using slf = std::numeric_limits<float>;
 	return std::abs(x - other.x) <= slf::epsilon() &&
 		std::abs(y - other.y) <= slf::epsilon() &&
 		std::abs(z - other.z) <= slf::epsilon() &&
@@ -198,22 +242,18 @@ Canvas::Canvas(std::size_t width, std::size_t height) : width{ width }, height{h
 }
 
 // Assumes x and y are in range
-std::size_t Canvas::index(int x, int y) const {
+std::size_t Canvas::index(std::size_t x, std::size_t y) const {
 	return x + y * width;
 }
 
-struct OutOfBounds {
-	int x, y;
-};
-
-void Canvas::write_pixel(int x, int y, Color c) {
+void Canvas::write_pixel(std::size_t x, std::size_t y, Color c) {
 	if (x < 0 || x >= width || y < 0 || y >= height) {
 		throw new OutOfBounds{x, y};
 	}
 	canvas[index(x, y)] = c;
 }
 
-Color Canvas::read_pixel(int x, int y) const {
+Color Canvas::read_pixel(std::size_t x, std::size_t y) const {
 	return canvas[index(x, y)];
 }
 
@@ -226,7 +266,7 @@ std::string CanvasToPPM::toPlainPPM() {
 	result = std::string{ "P3\n" } + std::to_string(c.width) + " " + std::to_string(c.height) + "\n" + std::to_string(maxval) + "\n";
 	// generate pixel data
 	// TODO: Write an iterator for canvas
-	for (int x = 0; x < c.height * c.width; ++x) {
+	for (std::size_t x = 0; x < c.height * c.width; ++x) {
 		if (x != 0 && x % c.width == 0) {
 			result[result.length() - 1] = '\n';
 			line_length = 0;

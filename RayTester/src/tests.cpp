@@ -170,7 +170,7 @@ TEST(Canvas, init) {
 	Canvas c(10, 20);
 	ASSERT_EQ(c.width, 10);
 	ASSERT_EQ(c.height, 20);
-	for (int x = 0; x < c.height * c.width; ++x)
+	for (std::size_t x = 0; x < c.height * c.width; ++x)
 		ASSERT_TRUE(c.canvas[x] == color(0, 0, 0));
 }
 
@@ -232,8 +232,8 @@ TEST(PlainPPM, ppmPixelData) {
 
 TEST(PlainPPM, splittingLongLines) {
 	Canvas c(10, 2);
-	Color c1 = color(1, 0.8, 0.6);
-	for (int x = 0; x < c.height * c.width; ++x) {
+	Color c1 = color(1.f, 0.8f, 0.6f);
+	for (std::size_t x = 0; x < c.height * c.width; ++x) {
 		c.canvas[x] = c1;
 	}
 	CanvasToPPM ppm{ c, 255 };
@@ -253,5 +253,84 @@ TEST(PlainPPM, endsWithNewLine) {
 	Canvas c{ 5, 3 };
 	CanvasToPPM ppm{ c, 255 };
 	std::string result = ppm.toPlainPPM();
-	ASSERT_EQ(result[result.length() - 1], '\n');
+	ASSERT_EQ(result[result.length() - 1U], '\n');
+}
+
+TEST(Matrix, 4x4) {
+	Matrix<4> m{ {
+		{1.f, 2.f, 3.f, 4.f},
+		{5.5f, 6.5f, 7.5f, 8.5f},
+		{9.f, 10.f, 11.f, 12.f},
+		{13.5f, 14.5f, 15.5f, 16.5f}
+	} };
+
+	ASSERT_FLOAT_EQ(m[0][0], 1.f);
+	ASSERT_FLOAT_EQ(m[0][3], 4.f);
+	ASSERT_FLOAT_EQ(m[1][0], 5.5f);
+	ASSERT_FLOAT_EQ(m[1][2], 7.5f);
+	ASSERT_FLOAT_EQ(m[2][2], 11.f);
+	ASSERT_FLOAT_EQ(m[3][0], 13.5f);
+	ASSERT_FLOAT_EQ(m[3][2], 15.5f);
+}
+
+TEST(Matrix, 2x2) {
+	Matrix<2> m{ {
+		{-3.f, 5.f},
+		{1.f, -2.f},
+	} };
+
+	ASSERT_FLOAT_EQ(m[0][0], -3.f);
+	ASSERT_FLOAT_EQ(m[0][1], 5.f);
+	ASSERT_FLOAT_EQ(m[1][0], 1.f);
+	ASSERT_FLOAT_EQ(m[1][1], -2.f);
+}
+
+TEST(Matrix, 3x3) {
+	Matrix<3> m{ {
+		{-3.f, 5.f, 0.f},
+		{1.f, -2.f, -7.f},
+		{0.f, 1.f, 1.f},
+	} };
+
+	ASSERT_FLOAT_EQ(m[0][0], -3.f);
+	ASSERT_FLOAT_EQ(m[1][1], -2.f);
+	ASSERT_FLOAT_EQ(m[2][2], 1.f);
+}
+
+TEST(Matrix, Equality) {
+	Matrix<4> a{ {
+		{1.f, 2.f, 3.f, 4.f},
+		{5.f, 6.f, 7.f, 8.f},
+		{9.f, 10.f, 11.f, 12.f},
+		{13.f, 14.f, 15.f, 16.f},
+	} };
+
+	Matrix<4> b{ {
+		{1.f, 2.f, 3.f, 4.f},
+		{5.f, 6.f, 7.f, 8.f},
+		{9.f, 10.f, 11.f, 12.f},
+		{13.f, 14.f, 15.f, 16.f},
+	} };
+
+	ASSERT_TRUE(a == b);
+	ASSERT_FALSE(a != b);
+}
+
+TEST(Matrix, Inequality) {
+	Matrix<4> a{ {
+		{1.f, 2.f, 3.f, 4.f},
+		{5.f, 6.f, 7.f, 8.f},
+		{9.f, 10.f, 11.f, 12.f},
+		{13.f, 14.f, 15.f, 16.f},
+	} };
+
+	Matrix<4> b{ {
+		{1.f, 2.f, 3.f, 4.f},
+		{5.f, 5.f, 7.f, 8.f},
+		{9.f, 10.f, 11.f, 12.f},
+		{13.f, 14.f, 15.f, 16.f},
+	} };
+
+	ASSERT_FALSE(a == b);
+	ASSERT_TRUE(a != b);
 }
