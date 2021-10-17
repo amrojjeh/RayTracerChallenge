@@ -7,4 +7,4 @@ If you're running on Windows, run the provided batch file, vsbuild.bat. If you'r
 
 ## Chapter 2 Product
 A projectile's motion. Rendered to test image outputting.
-![chapter2.jpg]()
+![](chapter2.jpg)
