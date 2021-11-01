@@ -1,5 +1,6 @@
 #pragma once
 
+#define M_PI 3.14159265358979323846f
 #include <cmath>
 #include <iostream>
 #include <array>
@@ -43,10 +44,26 @@ typedef struct Tuple {
 	RGB getRGB();
 } Point, Vector, Color;
 
+
 template<std::size_t N>
 struct Matrix {
-	static const Matrix<4> identity;
+	typedef Matrix<4> Transform;
 	float elements[N][N];
+	static const Transform identity;
+	static Transform translation(float x, float y, float z);
+	static Transform scaling(float x, float y, float z);
+	static Transform rotation_x(float radians);
+	static Transform rotation_y(float radians);
+	static Transform rotation_z(float radians);
+	static Transform shearing(float xy, float xz, float yx, float yz, float zx, float zy);
+
+	Transform translate(float x, float y, float z) const;
+	Transform scale(float x, float y, float z) const;
+	Transform rotate_x(float radians) const;
+	Transform rotate_y(float radians) const;
+	Transform rotate_z(float radians) const;
+	Transform shear(float xy, float xz, float yx, float yz, float zx, float zy) const;
+
 
 	Matrix();
 	Matrix(const float(&list)[N][N]);
@@ -66,6 +83,9 @@ struct Matrix {
 	bool invertible() const;
 	Matrix<N> inverse() const;
 };
+
+typedef Matrix<4> Transform;
+
 
 struct Canvas {
 	const std::size_t width;
@@ -111,6 +131,108 @@ const Matrix<4> Matrix<N>::identity = { {
 	{0.f, 0.f, 1.f, 0.f},
 	{0.f, 0.f, 0.f, 1.f}
 } };
+
+template<std::size_t N>
+Transform Matrix<N>::translation(float x, float y, float z) {
+	Matrix result = { {
+		{1.f, 0.f, 0.f, x},
+		{0.f, 1.f, 0.f, y},
+		{0.f, 0.f, 1.f, z},
+		{0.f, 0.f, 0.f, 1.f}
+	}};
+	return result;
+}
+
+template<std::size_t N>
+Transform Matrix<N>::scaling(float x, float y, float z) {
+	Matrix result = { {
+		{x, 0.f, 0.f, 0.f},
+		{0.f, y, 0.f, 0.f},
+		{0.f, 0.f, z, 0.f},
+		{0.f, 0.f, 0.f, 1.f}
+	} };
+	return result;
+}
+
+template<std::size_t N>
+Transform Matrix<N>::rotation_x(float r) {
+	float a = std::sin(r);
+	float b = std::cos(r);
+	Matrix result = { {
+		{1.f, 0.f, 0.f, 0.f},
+		{0.f, b, -a, 0.f},
+		{0.f, a, b, 0.f},
+		{0.f, 0.f, 0.f, 1.f}
+	} };
+	return result;
+}
+
+template<std::size_t N>
+Transform Matrix<N>::rotation_y(float r) {
+	float a = std::sin(r);
+	float b = std::cos(r);
+	Matrix result = { {
+		{b, 0.f, a, 0.f},
+		{0.f, 1.f, 0.f, 0.f},
+		{-a, 0.f, b, 0.f},
+		{0.f, 0.f, 0.f, 1.f}
+	} };
+	return result;
+}
+
+template<std::size_t N>
+Transform Matrix<N>::rotation_z(float r) {
+	float a = std::sin(r);
+	float b = std::cos(r);
+	Matrix result = { {
+		{b, -a, 0.f, 0.f},
+		{a, b, 0.f, 0.f},
+		{0.f, 0.f, 1.f, 0.f},
+		{0.f, 0.f, 0.f, 1.f}
+	} };
+	return result;
+}
+
+template<std::size_t N>
+Transform Matrix<N>::shearing(float xy, float xz, float yx, float yz, float zx, float zy) {
+	Matrix result = { {
+		{1.f, xy, xz, 0.f},
+		{yx, 1.f, yz, 0.f},
+		{zx, zy, 1.f, 0.f},
+		{0.f, 0.f, 0.f, 1.f}
+	} };
+	return result;
+}
+
+template<std::size_t N>
+Transform Matrix<N>::translate(float x, float y, float z) const {
+	return Transform::translation(x, y, z) * (*this);
+}
+
+template<std::size_t N>
+Transform Matrix<N>::scale(float x, float y, float z) const {
+	return Transform::scaling(x, y, z) * (*this);
+}
+
+template<std::size_t N>
+Transform Matrix<N>::rotate_x(float r) const {
+	return Transform::rotation_x(r) * (*this);
+}
+
+template<std::size_t N>
+Transform Matrix<N>::rotate_y(float r) const {
+	return Transform::rotation_y(r) * (*this);
+}
+
+template<std::size_t N>
+Transform Matrix<N>::rotate_z(float r) const {
+	return Transform::rotation_z(r) * (*this);
+}
+
+template<std::size_t N>
+Transform Matrix<N>::shear(float xy, float xz, float yx, float yz, float zx, float zy) const {
+	return Transform::shearing(xy, xz, yx, yz, zx, zy) * (*this);
+}
 
 template<std::size_t N>
 Matrix<N>::Matrix(const float(&list)[N][N])
@@ -181,6 +303,7 @@ Matrix<N> Matrix<N>::operator*(Matrix<N> other) const
 	return m;
 }
 
+// Just a bunch of dot products
 template<std::size_t N>
 Tuple Matrix<N>::operator*(const Tuple& other) const {
 	static_assert(N == 4, "Multiplying tuples with different sizes is not supported.");
@@ -362,6 +485,18 @@ std::ostream& operator<<(std::ostream& o, Tuple t) {
 
 	o << ")";
 	return o;
+}
+
+template<std::size_t N>
+std::ostream& operator<<(std::ostream& output, Matrix<N> mat) {
+	for (std::size_t x = 0; x < N; ++x) {
+		output << "[";
+		for (std::size_t y = 0; y < N; ++y) {
+			output << mat[x][y] << ", ";
+		}
+		output << "]\n";
+	}
+	return output;
 }
 
 RGB Tuple::getRGB() {

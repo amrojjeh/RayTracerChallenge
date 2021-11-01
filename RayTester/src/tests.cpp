@@ -584,10 +584,10 @@ TEST(Matrix, Inverse3) {
 
 	Matrix<4> result = a.inverse();
 	Matrix<4> expected{ {
-		{-0.04074, -0.07777, 0.14444, -0.22222},
-		{-0.07777, 0.03333, 0.36666, -0.33333},
-		{-0.02901, -0.14629, -0.10925, 0.12962},
-		{0.17777, 0.06666, -0.26666, 0.33333}
+		{-0.04074f, -0.07777f, 0.14444f, -0.22222f},
+		{-0.07777f, 0.03333f, 0.36666f, -0.33333f},
+		{-0.02901f, -0.14629f, -0.10925f, 0.12962f},
+		{0.17777f, 0.06666f, -0.26666f, 0.33333f}
 	} };
 
 	for (std::size_t x = 0; x < 4; ++x) {
@@ -615,4 +615,147 @@ TEST(Matrix, Inverse4) {
 	Matrix<4> c = a * b;
 	Matrix<4> result = c * b.inverse();
 	ASSERT_EQ(result, a);
+}
+
+TEST(MatrixTransformations, translation) {
+	Matrix<4> transform = Matrix<4>::translation(5.f, -3.f, 2.f);
+	Point p = point(-3, 4, 5);
+	ASSERT_EQ(transform * p, point(2, 1, 7));
+}
+
+TEST(MatrixTransformations, translationInverse) {
+	Matrix<4> transform = Matrix<4>::translation(5, -3, 2).inverse();
+	Point p = point(-3, 4, 5);
+	ASSERT_EQ(transform * p, point(-8, 7, 3));
+}
+
+TEST(MatrixTransformations, translationVector) {
+	Matrix<4> transform = Matrix<4>::translation(5, -3, 2);
+	Vector v = vector(-3, 4, 5);
+	ASSERT_EQ(transform * v, v);
+}
+
+TEST(MatrixTransformations, scalingPoint) {
+	Matrix<4> transform = Matrix<4>::scaling(2, 3, 4);
+	Point p = point(-4, 6, 8);
+	ASSERT_EQ(transform * p, point(-8, 18, 32));
+}
+
+TEST(MatrixTransformations, scalingVector) {
+	Matrix<4> transform = Matrix<4>::scaling(2, 3, 4);
+	Vector v = vector(-4, 6, 8);
+	ASSERT_EQ(transform * v, vector(-8, 18, 32));
+}
+
+TEST(MatrixTransformations, scalingInverse) {
+	Matrix<4> transform = Matrix<4>::scaling(2, 3, 4).inverse();
+	Vector v = vector(-4, 6, 8);
+	ASSERT_EQ(transform * v, vector(-2, 2, 2));
+}
+
+TEST(MatrixTransformations, reflectionAcrossX) {
+	Matrix<4> transform = Matrix<4>::scaling(-1, 1, 1);
+	Vector p = point(2, 3, 4);
+	ASSERT_EQ(transform * p, point(-2, 3, 4));
+}
+
+TEST(MatrixTransformations, rotationXAxis) {
+	Point p = point(0, 1, 0);
+	Matrix<4> half_quarter = Matrix<4>::rotation_x(M_PI / 4);
+	Matrix<4> full_quarter = Matrix<4>::rotation_x(M_PI / 2);
+	ASSERT_EQ(half_quarter * p, point(0, std::sqrtf(2) / 2, std::sqrtf(2) / 2));
+	ASSERT_EQ(full_quarter * p, point(0, 0, 1));
+}
+
+TEST(MatrixTransformations, rotationXAxisInverse) {
+	Point p = point(0, 1, 0);
+	Matrix<4> half_quarter = Matrix<4>::rotation_x(M_PI / 4).inverse();
+	ASSERT_EQ(half_quarter * p, point(0, std::sqrtf(2) / 2.f, -std::sqrtf(2) / 2.f));
+}
+
+TEST(MatrixTransformations, rotationYAxis) {
+	Point p = point(0, 0, 1);
+	Matrix<4> half_quarter = Matrix<4>::rotation_y(M_PI / 4);
+	Matrix<4> full_quarter = Matrix<4>::rotation_y(M_PI / 2);
+	ASSERT_EQ(half_quarter * p, point(std::sqrtf(2) / 2, 0, std::sqrtf(2) / 2));
+	ASSERT_EQ(full_quarter * p, point(1, 0, 0));
+}
+
+TEST(MatrixTransformations, rotationZAxis) {
+	Point p = point(0, 1, 0);
+	Matrix<4> half_quarter = Matrix<4>::rotation_z(M_PI / 4);
+	Matrix<4> full_quarter = Matrix<4>::rotation_z(M_PI / 2);
+	ASSERT_EQ(half_quarter * p, point(-std::sqrtf(2) / 2, std::sqrtf(2) / 2, 0));
+	ASSERT_EQ(full_quarter * p, point(-1, 0, 0));
+}
+
+TEST(MatrixTransformation, shearingXY) {
+	Matrix<4> transform = Matrix<4>::shearing(1.f, 0.f, 0.f, 0.f, 0.f, 0.f);
+	Point p = point(2, 3, 4);
+	ASSERT_EQ(transform * p, point(5, 3, 4));
+}
+
+TEST(MatrixTransformation, shearingXZ) {
+	Matrix<4> transform = Matrix<4>::shearing(0.f, 1.f, 0.f, 0.f, 0.f, 0.f);
+	Point p = point(2, 3, 4);
+	ASSERT_EQ(transform * p, point(6, 3, 4));
+}
+
+TEST(MatrixTransformation, shearingYX) {
+	Matrix<4> transform = Matrix<4>::shearing(0.f, 0.f, 1.f, 0.f, 0.f, 0.f);
+	Point p = point(2, 3, 4);
+	ASSERT_EQ(transform * p, point(2, 5, 4));
+}
+
+TEST(MatrixTransformation, shearingYZ) {
+	Matrix<4> transform = Matrix<4>::shearing(0.f, 0.f, 0.f, 1.f, 0.f, 0.f);
+	Point p = point(2, 3, 4);
+	ASSERT_EQ(transform * p, point(2, 7, 4));
+}
+
+TEST(MatrixTransformation, shearingZX) {
+	Matrix<4> transform = Matrix<4>::shearing(0.f, 0.f, 0.f, 0.f, 1.f, 0.f);
+	Point p = point(2, 3, 4);
+	ASSERT_EQ(transform * p, point(2, 3, 6));
+}
+
+TEST(MatrixTransformation, shearingZY) {
+	Matrix<4> transform = Matrix<4>::shearing(0.f, 0.f, 0.f, 0.f, 0.f, 1.f);
+	Point p = point(2, 3, 4);
+	ASSERT_EQ(transform * p, point(2, 3, 7));
+}
+
+TEST(MatrixTransformation, individualTransforms) {
+	Point p = point(1.f, 0.f, 1.f);
+	Transform A = Transform::rotation_x(M_PI / 2);
+	Transform B = Transform::scaling(5, 5, 5);
+	Transform C = Transform::translation(10, 5, 7);
+
+	// Apply rotation first
+	p = A * p;
+	ASSERT_EQ(p, point(1, -1, 0));
+	// Apply scaling second
+	p = B * p;
+	ASSERT_EQ(p, point(5, -5, 0));
+	// Apply translation
+	p = C * p;
+	ASSERT_EQ(p, point(15, 0, 7));
+}
+
+TEST(MatrixTransformation, chainTransforms) {
+	Point p = point(1.f, 0.f, 1.f);
+	Transform A = Transform::rotation_x(M_PI / 2);
+	Transform B = Transform::scaling(5, 5, 5);
+	Transform C = Transform::translation(10, 5, 7);
+	Transform T = C * (B * A);
+	ASSERT_EQ(T * p, point(15, 0, 7));
+}
+
+TEST(MatrixTransformation, fluentTransform) {
+	Point p = point(1.f, 0.f, 1.f);
+	Transform T = Transform::identity
+		.rotate_x(M_PI / 2)
+		.scale(5, 5, 5)
+		.translate(10, 5, 7);
+	ASSERT_EQ(T * p, point(15, 0, 7));
 }

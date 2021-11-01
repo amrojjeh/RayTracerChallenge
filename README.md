@@ -35,3 +35,7 @@ Is there any difference between the inverse of the tranpose of a matrix, and the
  yes
 tuple(1, 24, 3, 4)
 ```
+
+## Chapter 4 Product
+A clock. Rendered to test matrix transformations.
+![](chapter4.jpg)
