@@ -6,15 +6,21 @@ int main() {
 	int height, width;
 	height = width = 600;
 	Canvas c(width, height);
-	float radius = 250.f;
-	Point p = point(0.f, -radius, 0.f); // Starts at the top of the clock
-	Transform T = Transform::identity.rotate_z(M_PI / 6);
-	for (int x = 0; x < 12; ++x) {
-		std::cout << p << std::endl;
-		for (int w = -5; w < 5; ++w)
-			for (int h = -5; h < 5; ++h)
-				c.write_pixel(static_cast<int>(p.x + width / 2) + w, static_cast<int>(p.y + height / 2) + h, color(255, 255, 255));
-		p = T * p;
+	Sphere sphere;
+	sphere.transform = Transform::scaling(width / 2.f, width / 2.f, width / 2.f);
+	for (int x = 0; x < width; ++x) {
+		for (int y = 0; y < height; ++y) {
+			Ray ray{ point(x - width / 2, y - height / 2, -5), vector(0, 0, 1) };
+			std::vector<Intersection> inters = intersections(intersect(sphere, ray));
+			Intersection* h = nullptr;
+			hit(inters, &h);
+			if (h != nullptr) {
+				c.write_pixel(x, y, color(255, 0, 0));
+			}
+			else {
+				c.write_pixel(x, y, color(0, 0, 0));
+			}
+		}
 	}
 	CanvasToPPM c2ppm(c);
 	std::ofstream file;

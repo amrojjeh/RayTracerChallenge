@@ -759,3 +759,174 @@ TEST(MatrixTransformation, fluentTransform) {
 		.translate(10, 5, 7);
 	ASSERT_EQ(T * p, point(15, 0, 7));
 }
+
+
+TEST(RayCasting, creatingRay) {
+	Point origin = point(1, 2, 3);
+	Vector direction = vector(4, 5, 6);
+	Ray r = Ray{ origin, direction };
+	ASSERT_EQ(r.origin, origin);
+	ASSERT_EQ(r.direction, direction);
+}
+
+TEST(RayCasting, computingPointFromDistance) {
+	Ray r{ point(2, 3, 4), vector(1, 0, 0) };
+	ASSERT_EQ(r.position(0), point(2, 3, 4));
+	ASSERT_EQ(r.position(1), point(3, 3, 4));
+	ASSERT_EQ(r.position(-1), point(1, 3, 4));
+	ASSERT_EQ(r.position(2.5), point(4.5, 3, 4));
+}
+
+TEST(RayCasting, rayIntersectsSphereAtTwoPoints) {
+	Ray r{point(0, 0, -5), vector(0, 0, 1)};
+	Sphere s;
+	std::vector<Intersection> xs = intersect(s, r);
+	ASSERT_EQ(xs.size(), 2);
+	ASSERT_FLOAT_EQ(xs[0].t, 4.0f);
+	ASSERT_FLOAT_EQ(xs[1].t, 6.0f);
+}
+
+TEST(RayCasting, tangentIntersection) {
+	Ray r{point(0, 1, -5), vector(0, 0, 1)};
+	Sphere s;
+	std::vector<Intersection> xs = intersect(s, r);
+	ASSERT_EQ(xs.size(), 2);
+	ASSERT_FLOAT_EQ(xs[0].t, 5.0f);
+	ASSERT_FLOAT_EQ(xs[1].t, 5.0f);
+}
+
+TEST(RayCasting, rayMissesSphere) {
+	Ray r{ point(0, 2, -5), vector(0, 0, 1) };
+	Sphere s;
+	std::vector<Intersection> xs = intersect(s, r);
+	ASSERT_EQ(xs.size(), 0);
+}
+
+TEST(RayCasting, rayInsideSphere) {
+	Ray r{ point(0, 0, 0), vector(0, 0, 1) };
+	Sphere s;
+	std::vector<Intersection> xs = intersect(s, r);
+	ASSERT_EQ(xs.size(), 2);
+	ASSERT_FLOAT_EQ(xs[0].t, -1.0f);
+	ASSERT_FLOAT_EQ(xs[1].t, 1.0f);
+}
+
+TEST(RayCasting, sphereBehindRay) {
+	Ray r{ point(0, 0, 5), vector(0, 0, 1) };
+	Sphere s;
+	std::vector<Intersection> xs = intersect(s, r);
+	ASSERT_EQ(xs.size(), 2);
+	ASSERT_FLOAT_EQ(xs[0].t, -6.0f);
+	ASSERT_FLOAT_EQ(xs[1].t, -4.0f);
+}
+
+TEST(Intersections, tAndObject) {
+	Sphere s;
+	Intersection i{ 3.5f, s };
+	ASSERT_FLOAT_EQ(i.t, 3.5f);
+	ASSERT_EQ(i.object, s);
+}
+
+TEST(Intersections, aggregatingIntersections) {
+	Sphere s;
+	Intersection i1{ 1.f, s };
+	Intersection i2{ 2.f, s };
+	std::vector<Intersection> xs{ i1, i2 };
+	ASSERT_EQ(xs.size(), 2);
+	ASSERT_FLOAT_EQ(xs[0].t, 1.f);
+	ASSERT_FLOAT_EQ(xs[1].t, 2.f);
+}
+
+TEST(Intersections, intersectSetsObject) {
+	Ray r{ point(0, 0, -5), vector(0, 0, 1) };
+	Sphere s;
+	std::vector<Intersection> xs = intersect(s, r);
+	ASSERT_EQ(xs.size(), 2);
+	ASSERT_EQ(xs[0].object, s);
+	ASSERT_EQ(xs[1].object, s);
+}
+
+TEST(Hits, allIntersectionsArePositive) {
+	Sphere s;
+	Intersection i1{ 1.f, s };
+	Intersection i2{ 2.f, s };
+	std::vector<Intersection> xs = intersections({ i1, i2 });
+	Intersection* i;
+	hit(xs, &i);
+	ASSERT_EQ(static_cast<Intersection>(*i), i1);
+}
+
+TEST(Hits, someIntersectionsAreNegative) {
+	Sphere s;
+	Intersection i1{ -1.f, s };
+	Intersection i2{ 2.f, s };
+	std::vector<Intersection> xs = intersections({ i1, i2 });
+	Intersection* i;
+	hit(xs, &i);
+	ASSERT_EQ(static_cast<Intersection>(*i), i2);
+}
+
+TEST(Hits, allIntersectionsAreNegative) {
+	Sphere s;
+	std::vector<Intersection> xs = intersections({ { -2.f, s }, { -1.f, s } });
+	Intersection* i = nullptr;
+	hit(xs, &i);
+	ASSERT_EQ(i, nullptr);
+}
+
+TEST(Hits, alwaysLowestNegative) {
+	Sphere s;
+	Intersection i1{ 5.f, s };
+	Intersection i2{ 7.f,s };
+	Intersection i3{ -3.f,s };
+	Intersection i4{ 2.f, s };
+	std::vector<Intersection> xs = intersections({ i1, i2, i3, i4 });
+	Intersection* i;
+	hit(xs, &i);
+	ASSERT_EQ(static_cast<Intersection>(*i), i4);
+}
+
+TEST(RayTransformation, translatingRay) {
+	Ray r{ point(1, 2, 3), vector(0, 1, 0) };
+	Transform m = Transform::translation(3, 4, 5);
+	Ray r2 = r.transform(m);
+	ASSERT_EQ(r2.origin, point(4, 6, 8));
+	ASSERT_EQ(r2.direction, vector(0, 1, 0));
+}
+
+TEST(RayTransformation, scalingRay) {
+	Ray r{ point(1, 2, 3), vector(0, 1, 0) };
+	Transform m = Transform::scaling(2, 3, 4);
+	Ray r2 = r.transform(m);
+	ASSERT_EQ(r2.origin, point(2, 6, 12));
+	ASSERT_EQ(r2.direction, vector(0, 3, 0));
+}
+
+TEST(sphereTransform, defaultTrans) {
+	Sphere s;
+	ASSERT_EQ(s.transform, Transform::identity);
+}
+
+TEST(sphereTransformation, changingTrans) {
+	Sphere s;
+	s.transform = Transform::translation(2, 3, 4);
+	ASSERT_EQ(s.transform, Transform::translation(2, 3, 4));
+}
+
+TEST(sphereTransform, scaleSphereIntersection) {
+	Ray ray{ point(0, 0, -5), vector(0, 0, 1) };
+	Sphere s;
+	s.transform = Transform::scaling(2, 2, 2);
+	std::vector<Intersection> xs = intersect(s, ray);
+	ASSERT_EQ(xs.size(), 2);
+	ASSERT_FLOAT_EQ(xs[0].t, 3.f);
+	ASSERT_FLOAT_EQ(xs[1].t, 7.f);
+}
+
+TEST(sphereTransform, intersectingWithTransformedSphere) {
+	Ray ray{point(0, 0, -5), vector(0, 0, 1)};
+	Sphere s;
+	s.transform = Transform::translation(5, 0, 0);
+	std::vector<Intersection> xs = intersect(s, ray);
+	ASSERT_EQ(xs.size(), 0);
+}

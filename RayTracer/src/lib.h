@@ -3,10 +3,13 @@
 #define M_PI 3.14159265358979323846f
 #include <cmath>
 #include <iostream>
+#include <vector>
 #include <array>
 #include <cstddef>
-#include<string>
+#include <string>
 #include <cassert>
+#include <cstdarg>
+#include <algorithm>
 
 #define EPSILON 0.00001
 
@@ -114,6 +117,102 @@ private:
 	std::string result;
 	void appendSampleStr(float sample);
 };
+
+struct Sphere {
+	Sphere() {
+		static int i = 0;
+		this->id = i++;
+		this->transform = Transform::identity;
+	}
+	
+	int id;
+	Transform transform;
+
+	bool operator==(const Sphere& other) const {
+		return id == other.id;
+	}
+};
+
+struct Ray {
+	Point origin;
+	Vector direction;
+
+	Point position(float t) {
+		return origin + (direction * t);
+	}
+
+	Ray transform(Transform t) {
+		return Ray{ t * origin, t * direction };
+	}
+};
+
+struct Intersection {
+	float t;
+	Sphere object;
+
+	bool operator==(const Intersection& other) const {
+		return object == other.object && abs(t - other.t) < EPSILON;
+	}
+
+	bool operator<(const Intersection& other) const {
+		return t < other.t;
+	}
+
+	bool operator>(const Intersection& other) const {
+		return t > other.t;
+	}
+
+	bool operator<=(const Intersection& other) const {
+		return t <= other.t;
+	}
+
+	bool operator>=(const Intersection& other) const {
+		return t >= other.t;
+	}
+};
+
+Color color(float r, float g, float b) {
+	return Color{ r, g, b };
+}
+
+Tuple point(float x, float y, float z) {
+	return Point{ x, y, z, 1.0 };
+}
+
+Tuple vector(float x, float y, float z) {
+	return Vector{ x, y, z, 0.0 };
+}
+
+std::vector<Intersection> intersect(Sphere sphere, Ray ray) {
+	std::vector<Intersection> xs{};
+	Ray r = ray.transform(sphere.transform.inverse());
+	Vector sphere_to_ray = r.origin - point(0, 0, 0);
+	float a = r.direction.dot(r.direction);
+	float b = 2 * r.direction.dot(sphere_to_ray);
+	float c = sphere_to_ray.dot(sphere_to_ray) - 1;
+	float discriminant = b * b - 4 * a * c;
+	if (discriminant < 0) {
+		return xs;
+	}
+	xs.push_back(Intersection{ (-b - sqrtf(discriminant)) / (2 * a), sphere });
+	xs.push_back(Intersection{ (-b + sqrtf(discriminant)) / (2 * a), sphere });
+	return xs;
+}
+
+std::vector<Intersection> intersections(std::vector<Intersection> xs) {
+	std::sort(xs.begin(), xs.end());
+	return xs;
+}
+
+// Assumes xs is sorted
+void hit(std::vector<Intersection> xs, Intersection** i) {
+	for (auto x : xs) {
+		if (x.t > 0) {
+			*i = &x;
+			return;
+		}
+	}
+}
 
 template<class T>
 T clamp(T v, T a, T b) {
@@ -383,18 +482,6 @@ Matrix<N> Matrix<N>::inverse() const {
 		}
 	}
 	return result;
-}
-
-Color color(float r, float g, float b) {
-	return Color{ r, g, b };
-}
-
-Tuple point(float x, float y, float z) {
-	return Point{ x, y, z, 1.0 };
-}
-
-Tuple vector(float x, float y, float z) {
-	return Vector{ x, y, z, 0.0 };
 }
 
 bool Tuple::operator==(const Tuple& other) const {

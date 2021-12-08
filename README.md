@@ -39,3 +39,6 @@ tuple(1, 24, 3, 4)
 ## Chapter 4 Product
 A clock. Rendered to test matrix transformations.
 ![](chapter4.jpg)
+
+## Chapter 5 Product
+![](chapter5.png)
